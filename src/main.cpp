@@ -30,9 +30,18 @@ std::string hasData(std::string s) {
 double run(double Kp, double Ki, double Kd);
 
 bool twiddle = true;
-double Kp = 0.2;
-double Ki = 0.004;
-double Kd = 3.0;
+double Kp = 0.150141;
+double Ki = 0.0000778939;
+double Kd = 3.68184;
+
+//Throttle 0.4
+//Kp: 0.178118,  Ki: 5.42955e-05,  Kd: 3.21538
+
+//Throttle 0.5
+//Kp: 0.158879,  Ki: 7.04218e-05,  Kd: 3.68184
+
+//Throttle 0.6
+//Kp: 0.150141,  Ki: 7.78939e-05,  Kd: 3.68184
 
 double twiddle_tol = 0.002;
 
@@ -42,9 +51,9 @@ int main() {
   if (twiddle){
 
     double params [3] = {Kp, Ki, Kd};
-    double dp [3] = {0.1, 0.002, 1.5};
+    double dp [3] = {params[0]*0.05, params[1]*0.05, params[2]*0.05};
 
-
+    run(Kp, Ki, Kd);
     best_err = run(Kp, Ki, Kd);
     std::cout << "New best error: " << best_err << std::endl;
 
@@ -58,7 +67,7 @@ int main() {
           best_err = err;
           dp[i] *= 1.1;
           std::cout << "New best error: " << err << std::endl;
-          std::cout << "Kp: " << params[0] << "Ki: " << params[1] << "Kd: " << params[2] << std::endl;
+          std::cout << "Kp: " << params[0] << ",  Ki: " << params[1] << ",  Kd: " << params[2] << std::endl;
         } else {
           params[i] -= 2 * dp[i];
           std::cout << "Trying: " << "Kp: " << params[0] << ",  Ki: " << params[1] << ",  Kd: " << params[2] << std::endl;
@@ -117,14 +126,14 @@ double run(double Kp, double Ki, double Kd) {
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
             return;
           }
-          if (counter > 2) {
-            total_error += abs(cte);
+          if (counter > 500) {
+            total_error += pow(cte, 2);
           }
           pid.UpdateError(cte);
           double steer_value = pid.TotalError();
 
           counter++;
-          if (twiddle && counter > 1000) {
+          if (twiddle && counter > 5000) {
             std::string msg = "42[\"reset\",{}]";
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
             h.uWS::Group<uWS::SERVER>::close();
@@ -137,7 +146,7 @@ double run(double Kp, double Ki, double Kd) {
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.1;
+          msgJson["throttle"] = 0.6;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
