@@ -29,21 +29,18 @@ std::string hasData(std::string s) {
 
 double run(double Kp, double Ki, double Kd);
 
-bool twiddle = true;
-double Kp = 0.150141;
-double Ki = 0.0000778939;
-double Kd = 3.68184;
+bool twiddle = false;
+double Kp = 0.24;
+double Ki = 0.0012;
+double Kd = 3.6;
 
-//Throttle 0.4
-//Kp: 0.178118,  Ki: 5.42955e-05,  Kd: 3.21538
-
-//Throttle 0.5
-//Kp: 0.158879,  Ki: 7.04218e-05,  Kd: 3.68184
-
+// Works well on windows not on linux
 //Throttle 0.6
 //Kp: 0.150141,  Ki: 7.78939e-05,  Kd: 3.68184
 
+
 double twiddle_tol = 0.002;
+int twiddle_counter = 1200;
 
 double best_err;
 
@@ -51,7 +48,7 @@ int main() {
   if (twiddle){
 
     double params [3] = {Kp, Ki, Kd};
-    double dp [3] = {params[0]*0.05, params[1]*0.05, params[2]*0.05};
+    double dp [3] = {params[0]*0.2, params[1]*0.2, params[2]*0.2};
 
     run(Kp, Ki, Kd);
     best_err = run(Kp, Ki, Kd);
@@ -86,7 +83,7 @@ int main() {
     }
     std::cout << "Twiddle finished!" << std::endl;
   } else {
-    double total_error = run(Kp, Ki, Kd);
+    run(Kp, Ki, Kd);
   }
 }
 
@@ -126,14 +123,14 @@ double run(double Kp, double Ki, double Kd) {
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
             return;
           }
-          if (counter > 500) {
+          if (counter > twiddle_counter/10) {
             total_error += pow(cte, 2);
           }
           pid.UpdateError(cte);
           double steer_value = pid.TotalError();
 
           counter++;
-          if (twiddle && counter > 5000) {
+          if (twiddle && counter > twiddle_counter) {
             std::string msg = "42[\"reset\",{}]";
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
             h.uWS::Group<uWS::SERVER>::close();
@@ -146,7 +143,7 @@ double run(double Kp, double Ki, double Kd) {
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.6;
+          msgJson["throttle"] = 0.4;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
